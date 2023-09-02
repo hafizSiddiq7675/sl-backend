@@ -43,7 +43,7 @@ class UserLoginView(APIView):
             user = UserModel.objects.get(username=request_username.lower())
         except UserModel.DoesNotExist:
             logger.info(
-                'login attempt with non-existing email: %s',
+                'login attempt with non-existing username: %s',
                 request_username,
             )
             return Response(
