@@ -67,36 +67,62 @@ class MenuItem(models.Model):
 
 class RecipeRequirement(models.Model):
     # Fields
-    menu_item = models.ForeignKey('MenuItem', on_delete=models.CASCADE, verbose_name="Menu Item")
-    ingredient = models.ForeignKey('Ingredient', on_delete=models.CASCADE, verbose_name="Ingredient")
-    quantity = models.FloatField(validators=[MinValueValidator(0)], verbose_name="Quantity")
+    menu_item = models.ForeignKey(
+        'MenuItem', on_delete=models.CASCADE, verbose_name='Menu Item'
+    )
+    ingredient = models.ForeignKey(
+        'Ingredient', on_delete=models.CASCADE, verbose_name='Ingredient'
+    )
+    quantity = models.FloatField(
+        validators=[MinValueValidator(0)], verbose_name='Quantity'
+    )
 
     class Meta:
-        verbose_name = "Recipe Requirement"
-        verbose_name_plural = "Recipe Requirements"
+        verbose_name = 'Recipe Requirement'
+        verbose_name_plural = 'Recipe Requirements'
         unique_together = ['menu_item', 'ingredient']
         # Creating indexes on fields for optimizing query performance
         indexes = [
-            models.Index(fields=['menu_item',]),
-            models.Index(fields=['ingredient',]),
+            models.Index(
+                fields=[
+                    'menu_item',
+                ]
+            ),
+            models.Index(
+                fields=[
+                    'ingredient',
+                ]
+            ),
         ]
 
     def __str__(self):
-        return f"{self.menu_item} - {self.ingredient}"
+        return f'{self.menu_item} - {self.ingredient}'
 
 
 class Purchase(models.Model):
     # Fields
-    menu_item = models.ForeignKey('MenuItem', on_delete=models.CASCADE, verbose_name="Menu Item")
-    purchase_date = models.DateTimeField(default=timezone.now, verbose_name="Purchase Date")
-    customer_name = models.CharField(max_length=255, blank=True, verbose_name="Customer Name")
-    quantity = models.PositiveIntegerField(validators=[MinValueValidator(1)], verbose_name="Quantity")
-    total_price = models.DecimalField(max_digits=10, decimal_places=2, validators=[MinValueValidator(0)], verbose_name="Total Price")
-
+    menu_item = models.ForeignKey(
+        'MenuItem', on_delete=models.CASCADE, verbose_name='Menu Item'
+    )
+    purchase_date = models.DateTimeField(
+        default=timezone.now, verbose_name='Purchase Date'
+    )
+    customer_name = models.CharField(
+        max_length=255, blank=True, verbose_name='Customer Name'
+    )
+    quantity = models.PositiveIntegerField(
+        validators=[MinValueValidator(1)], verbose_name='Quantity'
+    )
+    total_price = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        validators=[MinValueValidator(0)],
+        verbose_name='Total Price',
+    )
 
     class Meta:
-        verbose_name = "Purchase"
-        verbose_name_plural = "Purchases"
+        verbose_name = 'Purchase'
+        verbose_name_plural = 'Purchases'
         # Creating indexes on fields for optimizing query performance
         indexes = [
             models.Index(fields=['menu_item']),
@@ -109,4 +135,4 @@ class Purchase(models.Model):
         super(Purchase, self).save(*args, **kwargs)
 
     def __str__(self):
-        return f"Purchase of {self.quantity} {self.menu_item} on {self.purchase_date}"
+        return f'Purchase of {self.quantity} {self.menu_item} on {self.purchase_date}'
