@@ -30,7 +30,13 @@ class RecipeRequirementAdmin(admin.ModelAdmin):
 
 
 class PurchaseAdmin(admin.ModelAdmin):
-    list_display = ['menu_item', 'purchase_date', 'customer_name', 'quantity', 'total_price']
+    list_display = [
+        'menu_item',
+        'purchase_date',
+        'customer_name',
+        'quantity',
+        'total_price',
+    ]
     list_filter = ['menu_item', 'purchase_date']
     search_fields = ['menu_item__item_name', 'customer_name']
     ordering = ['-purchase_date', 'menu_item']
