@@ -62,3 +62,23 @@ class MenuItem(models.Model):
 
     def __str__(self):
         return self.item_name
+
+
+class RecipeRequirement(models.Model):
+    # Fields
+    menu_item = models.ForeignKey('MenuItem', on_delete=models.CASCADE, verbose_name="Menu Item")
+    ingredient = models.ForeignKey('Ingredient', on_delete=models.CASCADE, verbose_name="Ingredient")
+    quantity = models.FloatField(validators=[MinValueValidator(0)], verbose_name="Quantity")
+
+    class Meta:
+        verbose_name = "Recipe Requirement"
+        verbose_name_plural = "Recipe Requirements"
+        unique_together = ['menu_item', 'ingredient']
+        # Creating indexes on fields for optimizing query performance
+        indexes = [
+            models.Index(fields=['menu_item',]),
+            models.Index(fields=['ingredient',]),
+        ]
+
+    def __str__(self):
+        return f"{self.menu_item} - {self.ingredient}"
