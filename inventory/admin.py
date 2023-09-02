@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Ingredient
+from .models import Ingredient, MenuItem
 
 
 class IngredientAdmin(admin.ModelAdmin):
@@ -16,5 +16,11 @@ class IngredientAdmin(admin.ModelAdmin):
     ordering = ['name']
 
 
+class MenuItemAdmin(admin.ModelAdmin):
+    list_display = ['item_name', 'price']
+    search_fields = ['item_name']
+    ordering = ['item_name']
+
 
 admin.site.register(Ingredient, IngredientAdmin)
+admin.site.register(MenuItem, MenuItemAdmin)
