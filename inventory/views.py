@@ -40,3 +40,25 @@ class GetIngredientApiView(APIView):
             return Response(
                 {'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
+
+
+class DeleteIngredientApiView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def delete(self, request, ingredient_id):
+        try:
+            ingredient = Ingredient.objects.get(id=ingredient_id)
+            ingredient.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+
+        except Ingredient.DoesNotExist:
+            return Response(
+                {'error': 'Ingredient not found'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        except Exception as e:
+            return Response(
+                {'error': 'Internal Server Error', 'message': str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
