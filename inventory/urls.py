@@ -1,5 +1,9 @@
 from django.urls import path
-from .views import GetIngredientApiView, DeleteIngredientApiView
+from .views import (
+    GetIngredientApiView,
+    DeleteIngredientApiView,
+    GetMenuItemApiView,
+)
 
 urlpatterns = [
     path(
@@ -11,5 +15,8 @@ urlpatterns = [
         'api/ingredients/<int:ingredient_id>/',
         DeleteIngredientApiView.as_view(),
         name='ingredient-delete',
+    ),
+    path(
+        'api/menu-items/', GetMenuItemApiView.as_view(), name='menu-items-list'
     ),
 ]
