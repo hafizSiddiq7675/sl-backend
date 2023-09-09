@@ -161,3 +161,47 @@ class GetMenuItemApiViewTests(APITestCase):
         self.assertIn('previous', response.data)
         self.assertIn('count', response.data)
         self.assertEqual(response.data['count'], 15)
+
+
+class StoreMenuItemApiViewTests(APITestCase):
+    def setUp(self):
+        self.url = reverse(
+            'store-menu-item'
+        )  # Assuming the name you provided in urls.py is 'store-menu-item'
+        self.client = APIClient()
+
+        # Assuming you have a User model to use for authentication.
+        self.user = User.objects.create_user(
+            username='testuser2', password='testpass'
+        )
+        self.client.force_authenticate(user=self.user)
+
+    def test_create_menu_item(self):
+        data = {'name': 'Chicken Alfredo', 'price': '10.99'}
+        response = self.client.post(self.url, data)
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.data['name'], data['name'])
+        self.assertEqual(response.data['price'], data['price'])
+
+    def test_duplicate_item_name(self):
+        MenuItem.objects.create(item_name='Chicken Alfredo', price=10.99)
+        data = {'name': 'Chicken Alfredo', 'price': '12.99'}
+        response = self.client.post(self.url, data)
+        self.assertEqual(response.status_code, 400)
+        self.assertIn(
+            'name', response.data
+        )  # Expecting an error related to the 'name' field
+
+    def test_price_validation(self):
+        data = {'name': 'Chicken Alfredo', 'price': '-5.00'}  # Invalid price
+        response = self.client.post(self.url, data)
+        self.assertEqual(response.status_code, 400)
+        self.assertIn(
+            'price', response.data
+        )  # Expecting an error related to the 'price' field
+
+    def test_unauthenticated_access(self):
+        self.client.logout()  # Removing authentication
+        data = {'name': 'Chicken Alfredo', 'price': '10.99'}
+        response = self.client.post(self.url, data)
+        self.assertEqual(response.status_code, 401)
