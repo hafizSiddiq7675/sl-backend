@@ -100,3 +100,19 @@ class GetMenuItemApiView(APIView):
                 {'error': 'Internal Server Error', 'message': str(e)},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
+
+
+class StoreMenuItemApiView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = MenuItemSerializer
+
+    def post(self, request):
+        serializer = self.serializer_class(data=request.data)
+
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        else:
+            return Response(
+                serializer.errors, status=status.HTTP_400_BAD_REQUEST
+            )
