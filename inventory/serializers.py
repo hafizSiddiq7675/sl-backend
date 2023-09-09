@@ -5,7 +5,15 @@ from .models import Ingredient, MenuItem
 class IngredientSerializer(serializers.ModelSerializer):
     class Meta:
         model = Ingredient
-        fields = ['id', 'name', 'available_quantity', 'price_per_unit']
+        fields = [
+            'id',
+            'name',
+            'available_quantity',
+            'price_per_unit',
+            'date_added',
+            'expiry_date',
+            'measurement_unit',
+        ]
 
 
 class MenuItemSerializer(serializers.ModelSerializer):
