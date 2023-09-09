@@ -205,3 +205,73 @@ class StoreMenuItemApiViewTests(APITestCase):
         data = {'name': 'Chicken Alfredo', 'price': '10.99'}
         response = self.client.post(self.url, data)
         self.assertEqual(response.status_code, 401)
+
+
+class StoreIngredientApiViewTests(APITestCase):
+    def setUp(self):
+        # Sample User for testing
+        self.user = User.objects.create_user(
+            username='testuser3', password='testpassword'
+        )
+
+        # Setup the APIClient with credentials for authentication
+        self.client = APIClient()
+        self.client.force_authenticate(user=self.user)
+
+        # URL for the API endpoint
+        self.url = reverse('store-ingredient')
+
+        # Sample valid data
+        self.valid_data = {
+            'name': 'Tomato',
+            'available_quantity': 150.0,
+            'measurement_unit': 'grams',
+            'price_per_unit': 0.50,
+        }
+
+    def test_create_ingredient_successful(self):
+        response = self.client.post(self.url, self.valid_data, format='json')
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(Ingredient.objects.count(), 1)
+        self.assertEqual(Ingredient.objects.get().name, 'Tomato')
+
+    def test_unauthenticated_create_ingredient(self):
+        # Force unauthentication
+        self.client.force_authenticate(user=None)
+
+        response = self.client.post(self.url, self.valid_data, format='json')
+        self.assertEqual(response.status_code, 401)
+
+    def test_ingredient_name_uniqueness(self):
+        # Create one ingredient with the name "Tomato"
+        Ingredient.objects.create(
+            name='Tomato',
+            available_quantity=100,
+            measurement_unit='grams',
+            price_per_unit=0.30,
+        )
+
+        # Try to create another ingredient with the same name
+        response = self.client.post(self.url, self.valid_data, format='json')
+        self.assertEqual(response.status_code, 400)
+
+    def test_invalid_measurement_unit(self):
+        # Change the valid measurement unit to an invalid one
+        self.valid_data['measurement_unit'] = 'invalid_unit'
+
+        response = self.client.post(self.url, self.valid_data, format='json')
+        self.assertEqual(response.status_code, 400)
+
+    def test_invalid_available_quantity(self):
+        # Set available_quantity to a negative value
+        self.valid_data['available_quantity'] = -10
+
+        response = self.client.post(self.url, self.valid_data, format='json')
+        self.assertEqual(response.status_code, 400)
+
+    def test_invalid_price_per_unit(self):
+        # Set price_per_unit to a negative value
+        self.valid_data['price_per_unit'] = -0.30
+
+        response = self.client.post(self.url, self.valid_data, format='json')
+        self.assertEqual(response.status_code, 400)
