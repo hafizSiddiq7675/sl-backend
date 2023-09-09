@@ -1,8 +1,8 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status, permissions, pagination
-from .models import Ingredient
-from .serializers import IngredientSerializer
+from .models import Ingredient, MenuItem
+from .serializers import IngredientSerializer, MenuItemSerializer
 
 
 class GetIngredientApiView(APIView):
@@ -56,6 +56,44 @@ class DeleteIngredientApiView(APIView):
                 {'error': 'Ingredient not found'},
                 status=status.HTTP_404_NOT_FOUND,
             )
+
+        except Exception as e:
+            return Response(
+                {'error': 'Internal Server Error', 'message': str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+
+class GetMenuItemApiView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = MenuItemSerializer
+    pagination_class = pagination.PageNumberPagination
+
+    def get(self, request):
+        try:
+            menu_items = MenuItem.objects.all()
+
+            if not menu_items.exists():
+                return Response(
+                    {'error': 'No menu items found'},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
+
+            # Implementing pagination
+            paginator = self.pagination_class()
+            paginated_menu_items = paginator.paginate_queryset(
+                menu_items, request
+            )
+
+            if paginated_menu_items is not None:
+                serializer = self.serializer_class(
+                    paginated_menu_items, many=True
+                )
+                return paginator.get_paginated_response(serializer.data)
+
+            # This part will handle if there's no pagination required
+            serializer = self.serializer_class(menu_items, many=True)
+            return Response(serializer.data, status=status.HTTP_200_OK)
 
         except Exception as e:
             return Response(

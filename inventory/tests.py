@@ -2,7 +2,7 @@ from django.urls import reverse
 from rest_framework.test import APIClient, APITestCase
 from rest_framework.authtoken.models import Token
 from django.contrib.auth.models import User
-from .models import Ingredient
+from .models import Ingredient, MenuItem
 from unittest import mock
 
 
@@ -103,3 +103,61 @@ class DeleteIngredientApiViewTests(APITestCase):
                 Exception
             ):  # Expecting the Exception to be raised here
                 self.client.delete(url)
+
+
+class GetMenuItemApiViewTests(APITestCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.user = User.objects.create_user(
+            username='testuser1', password='testpass'
+        )
+        cls.url = reverse('menu-items-list')
+
+    def setUp(self):
+        self.client = APIClient()
+        self.client.force_authenticate(user=self.user)
+
+    def test_successful_response(self):
+        # Create a sample menu item
+        MenuItem.objects.create(item_name='Test Item', price=10.00)
+
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('Test Item', str(response.data))
+
+    def test_no_menu_items(self):
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 404)
+        self.assertIn('No menu items found', str(response.data))
+
+    def test_internal_server_error(self):
+        # Mocking an error scenario
+        url = reverse('menu-items-list')
+
+        with mock.patch(
+            'inventory.views.GetMenuItemApiView.get',
+            side_effect=Exception,
+        ):
+            with self.assertRaises(
+                Exception
+            ):  # Expecting the Exception to be raised here
+                self.client.get(url)
+
+    def test_unauthorized_access(self):
+        # Create a new client without authentication
+        client = APIClient()
+        response = client.get(self.url)
+        self.assertEqual(response.status_code, 401)
+
+    def test_pagination(self):
+        # Create more than the page limit, say if the limit is 10
+        for _ in range(15):
+            MenuItem.objects.create(item_name=f'Test Item {_}', price=10.00)
+
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('next', response.data)
+        self.assertIn('previous', response.data)
+        self.assertIn('count', response.data)
+        self.assertEqual(response.data['count'], 15)
