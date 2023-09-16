@@ -8,6 +8,8 @@ from .serializers import (
     RecipeRequirementSerializer,
     PurchaseSerializer,
 )
+from rest_framework.pagination import PageNumberPagination
+from rest_framework.filters import SearchFilter, OrderingFilter
 
 
 class GetIngredientApiView(APIView):
@@ -205,3 +207,27 @@ class UpdateIngredientApiView(APIView):
             return Response(
                 serializer.errors, status=status.HTTP_400_BAD_REQUEST
             )
+
+
+class GetMenuItemsApiView(APIView):
+    serializer_class = MenuItemSerializer
+    filter_backends = [SearchFilter, OrderingFilter]
+    search_fields = ['item_name']
+    ordering_fields = ['price', 'item_name']
+
+    def get(self, request):
+        menu_items = MenuItem.objects.all()
+
+        # Filtering using DRF's built-in features
+        for backend in list(self.filter_backends):
+            menu_items = backend().filter_queryset(request, menu_items, self)
+
+        # Pagination
+        paginator = PageNumberPagination()
+        page = paginator.paginate_queryset(menu_items, request)
+        if page is not None:
+            serializer = self.serializer_class(page, many=True)
+            return paginator.get_paginated_response(serializer.data)
+
+        serializer = self.serializer_class(menu_items, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)

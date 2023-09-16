@@ -485,3 +485,45 @@ class UpdateIngredientApiViewTest(APITestCase):
         self.assertEqual(
             response.data['price_per_unit'], str(original_price)
         )  # Ensure other fields remain unchanged
+
+
+class GetMenuItemsApiViewTestCase(APITestCase):
+    @classmethod
+    def setUpTestData(cls):
+        # Create some sample menu items
+        MenuItem.objects.all().delete()
+        MenuItem.objects.create(
+            item_name='Grilled Chicken Sandwich', price=10.99
+        )
+        MenuItem.objects.create(item_name='Veggie Salad', price=7.49)
+        MenuItem.objects.create(item_name='Chicken Salad', price=8.99)
+
+    def test_get_menu_items(self):
+        url = reverse('get-menu-items')
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.data['results']), 3)
+
+    def test_search_menu_items(self):
+        url = reverse('get-menu-items') + '?search=Chicken'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            len(response.data['results']), 2
+        )  # 2 items with "chicken" in their name
+
+    def test_ordering_menu_items(self):
+        url = reverse('get-menu-items') + '?ordering=price'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            float(response.data['results'][0]['price']), 7.49
+        )  # The cheapest item
+
+    def test_pagination(self):
+        url = reverse('get-menu-items') + '?page=1'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(
+            'results' in response.data
+        )  # Check if paginated response structure is used
