@@ -9,6 +9,7 @@ from .views import (
     StorePurchaseApiView,
     UpdateIngredientApiView,
     GetMenuItemsApiView,
+    GetPurchasesApiView,
 )
 
 urlpatterns = [
@@ -54,5 +55,8 @@ urlpatterns = [
         'api/get-menu-items/',
         GetMenuItemsApiView.as_view(),
         name='get-menu-items',
+    ),
+    path(
+        'api/purchases/', GetPurchasesApiView.as_view(), name='get-purchases'
     ),
 ]

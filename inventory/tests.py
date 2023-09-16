@@ -4,6 +4,7 @@ from rest_framework.authtoken.models import Token
 from django.contrib.auth.models import User
 from .models import Ingredient, MenuItem, RecipeRequirement, Purchase
 from unittest import mock
+from datetime import datetime, timedelta
 
 
 class GetIngredientApiViewTestCase(APITestCase):
@@ -527,3 +528,63 @@ class GetMenuItemsApiViewTestCase(APITestCase):
         self.assertTrue(
             'results' in response.data
         )  # Check if paginated response structure is used
+
+
+class GetPurchasesApiViewTest(APITestCase):
+    def setUp(self):
+        # Setting up data for the tests
+        self.user = User.objects.create_user(
+            username='testuser7', password='testpass'
+        )
+        item = MenuItem.objects.create(
+            item_name='Grilled Chicken Sandwich', price=10.99
+        )
+        Purchase.objects.create(
+            menu_item=item, customer_name='John Doe', quantity=2
+        )
+        Purchase.objects.create(
+            menu_item=item,
+            customer_name='Jane Doe',
+            quantity=1,
+            purchase_date=datetime.now() - timedelta(days=10),
+        )
+        self.token = Token.objects.create(user=self.user)
+        self.client.credentials(
+            HTTP_AUTHORIZATION='Token ' + self.token.key
+        )  # set the token in the request headers
+
+    def test_get_purchases_authenticated(self):
+        # Test basic retrieval of purchases
+        response = self.client.get(reverse('get-purchases'))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.data['results']), 2)
+
+    def test_permissions(self):
+        # Ensure unauthenticated requests are denied
+        self.client.credentials()  # Remove credentials
+        response = self.client.get(reverse('get-purchases'))
+        self.assertEqual(response.status_code, 401)
+
+    def test_filter_by_menu_item(self):
+        item_id = MenuItem.objects.first().id
+        response = self.client.get(
+            reverse('get-purchases'), {'menu_item_id': item_id}
+        )
+        self.assertEqual(
+            len(response.data['results']), 2
+        )  # Assuming both purchases are for the same menu item
+
+    def test_filter_by_customer_name(self):
+        response = self.client.get(
+            reverse('get-purchases'), {'customer_name': 'Jane'}
+        )
+        self.assertEqual(
+            len(response.data['results']), 1
+        )  # Assuming one purchase was made by Jane Doe
+
+    def test_pagination(self):
+        # Create more data if necessary to check pagination
+        response = self.client.get(reverse('get-purchases'), {'page': 1})
+        self.assertIn(
+            'count', response.data
+        )  # Checking if pagination structure exists

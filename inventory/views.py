@@ -1,7 +1,7 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status, permissions, pagination
-from .models import Ingredient, MenuItem
+from .models import Ingredient, MenuItem, Purchase
 from .serializers import (
     IngredientSerializer,
     MenuItemSerializer,
@@ -230,4 +230,50 @@ class GetMenuItemsApiView(APIView):
             return paginator.get_paginated_response(serializer.data)
 
         serializer = self.serializer_class(menu_items, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class GetPurchasesApiView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = PurchaseSerializer
+
+    ordering_fields = ['purchase_date']
+
+    def get(self, request):
+        # Get all purchases
+        purchases = Purchase.objects.all()
+
+        # Filter by menu_item_id if provided
+        menu_item_id = request.query_params.get('menu_item_id')
+        if menu_item_id:
+            purchases = purchases.filter(menu_item_id=menu_item_id)
+
+        # Filter by customer_name if provided
+        customer_name = request.query_params.get('customer_name')
+        if customer_name:
+            purchases = purchases.filter(
+                customer_name__icontains=customer_name
+            )
+
+        # Filter by date range if both date_from and date_to are provided
+        date_from = request.query_params.get('date_from', None)
+        date_to = request.query_params.get('date_to', None)
+        if date_from and date_to:
+            purchases = purchases.filter(
+                purchase_date__range=[date_from, date_to]
+            )
+
+        # Ordering
+        ordering = request.query_params.get('ordering')
+        if ordering in self.ordering_fields:
+            purchases = purchases.order_by(ordering)
+
+        # Pagination
+        paginator = PageNumberPagination()
+        paginated_purchases = paginator.paginate_queryset(purchases, request)
+        if paginated_purchases is not None:
+            serializer = self.serializer_class(paginated_purchases, many=True)
+            return paginator.get_paginated_response(serializer.data)
+
+        serializer = self.serializer_class(purchases, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
