@@ -2,7 +2,7 @@ from django.urls import reverse
 from rest_framework.test import APIClient, APITestCase
 from rest_framework.authtoken.models import Token
 from django.contrib.auth.models import User
-from .models import Ingredient, MenuItem, RecipeRequirement
+from .models import Ingredient, MenuItem, RecipeRequirement, Purchase
 from unittest import mock
 
 
@@ -276,24 +276,30 @@ class StoreIngredientApiViewTests(APITestCase):
         response = self.client.post(self.url, self.valid_data, format='json')
         self.assertEqual(response.status_code, 400)
 
-class StoreRecipeRequirementApiViewTest(APITestCase):
 
+class StoreRecipeRequirementApiViewTest(APITestCase):
     def setUp(self):
         # Create a test user
-        self.user = User.objects.create_user(username='testuser4', password='testpass')
+        self.user = User.objects.create_user(
+            username='testuser4', password='testpass'
+        )
         self.client = APIClient()
 
         # Create sample MenuItem and Ingredient for testing
-        self.menu_item = MenuItem.objects.create(item_name="Test Item", price=10.00)
+        self.menu_item = MenuItem.objects.create(
+            item_name='Test Item', price=10.00
+        )
         self.ingredient = Ingredient.objects.create(
-            name="Test Ingredient",
+            name='Test Ingredient',
             available_quantity=10.0,
             measurement_unit=Ingredient.GRAMS,
-            price_per_unit=1.00
+            price_per_unit=1.00,
         )
 
         # URL for the APIView
-        self.url = reverse('store-reciperequirement')  # The exact name depends on your urls.py configuration
+        self.url = reverse(
+            'store-reciperequirement'
+        )  # The exact name depends on your urls.py configuration
 
     def test_authenticated_with_valid_data(self):
         # Authenticate the client
@@ -303,12 +309,16 @@ class StoreRecipeRequirementApiViewTest(APITestCase):
         data = {
             'menu_item': self.menu_item.id,
             'ingredient': self.ingredient.id,
-            'quantity': 5.0
+            'quantity': 5.0,
         }
 
         response = self.client.post(self.url, data, format='json')
         self.assertEqual(response.status_code, 201)
-        self.assertTrue(RecipeRequirement.objects.filter(menu_item=self.menu_item, ingredient=self.ingredient).exists())
+        self.assertTrue(
+            RecipeRequirement.objects.filter(
+                menu_item=self.menu_item, ingredient=self.ingredient
+            ).exists()
+        )
 
     def test_authenticated_with_invalid_data(self):
         # Authenticate the client
@@ -318,12 +328,16 @@ class StoreRecipeRequirementApiViewTest(APITestCase):
         data = {
             'menu_item': self.menu_item.id,
             'ingredient': self.ingredient.id,
-            'quantity': -5.0
+            'quantity': -5.0,
         }
 
         response = self.client.post(self.url, data, format='json')
         self.assertEqual(response.status_code, 400)
-        self.assertFalse(RecipeRequirement.objects.filter(menu_item=self.menu_item, ingredient=self.ingredient).exists())
+        self.assertFalse(
+            RecipeRequirement.objects.filter(
+                menu_item=self.menu_item, ingredient=self.ingredient
+            ).exists()
+        )
 
     def test_unauthenticated_request(self):
         # Do not authenticate the client
@@ -332,8 +346,75 @@ class StoreRecipeRequirementApiViewTest(APITestCase):
         data = {
             'menu_item': self.menu_item.id,
             'ingredient': self.ingredient.id,
-            'quantity': 5.0
+            'quantity': 5.0,
         }
 
         response = self.client.post(self.url, data, format='json')
+        self.assertEqual(response.status_code, 401)
+
+
+class StorePurchaseApiViewTestCase(APITestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.url = reverse(
+            'store-purchase'
+        )  # assuming 'store-purchase' is the name of your URL pattern for StorePurchaseApiView
+        self.menu_item = MenuItem.objects.create(
+            item_name='Sample Item', price=10.0
+        )  # create a sample menu item
+
+        # Create an authenticated user and obtain a token (assuming you're using token authentication)
+        self.user = User.objects.create_user(
+            username='testuser5', password='testpass'
+        )
+        self.token = Token.objects.create(user=self.user)
+        self.client.credentials(
+            HTTP_AUTHORIZATION='Token ' + self.token.key
+        )  # set the token in the request headers
+
+    def test_create_purchase(self):
+        """Test creating a purchase."""
+        data = {
+            'menu_item': self.menu_item.id,
+            'customer_name': 'John Doe',
+            'quantity': 3,
+            'total_price': 30,
+        }
+        response = self.client.post(self.url, data)
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(Purchase.objects.count(), 1)
+        self.assertEqual(
+            Purchase.objects.get().total_price, 30.0
+        )  # 10.0 * 3 = 30.0
+
+    def test_invalid_menu_item(self):
+        """Test validation for invalid menu item."""
+        data = {
+            'menu_item': 9999,  # non-existent menu item id
+            'customer_name': 'John Doe',
+            'quantity': 3,
+            'total_price': 123,
+        }
+        response = self.client.post(self.url, data)
+        self.assertEqual(response.status_code, 404)
+
+    def test_invalid_quantity(self):
+        """Test validation for invalid quantity."""
+        data = {
+            'menu_item': self.menu_item.id,
+            'customer_name': 'John Doe',
+            'quantity': -3,  # negative quantity
+        }
+        response = self.client.post(self.url, data)
+        self.assertEqual(response.status_code, 400)
+
+    def test_unauthenticated_request(self):
+        """Test request without authentication."""
+        self.client.credentials()  # Remove credentials
+        data = {
+            'menu_item': self.menu_item.id,
+            'customer_name': 'John Doe',
+            'quantity': 3,
+        }
+        response = self.client.post(self.url, data)
         self.assertEqual(response.status_code, 401)

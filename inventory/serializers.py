@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Ingredient, MenuItem, RecipeRequirement
+from .models import Ingredient, MenuItem, RecipeRequirement, Purchase
 
 
 class IngredientSerializer(serializers.ModelSerializer):
@@ -50,3 +50,15 @@ class RecipeRequirementSerializer(serializers.ModelSerializer):
     def validate(self, data):
         # You can add any additional validation here
         return data
+
+
+class PurchaseSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Purchase
+        fields = [
+            'menu_item',
+            'purchase_date',
+            'customer_name',
+            'quantity',
+            'total_price',
+        ]

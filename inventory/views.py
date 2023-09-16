@@ -2,7 +2,12 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status, permissions, pagination
 from .models import Ingredient, MenuItem
-from .serializers import IngredientSerializer, MenuItemSerializer, RecipeRequirementSerializer
+from .serializers import (
+    IngredientSerializer,
+    MenuItemSerializer,
+    RecipeRequirementSerializer,
+    PurchaseSerializer,
+)
 
 
 class GetIngredientApiView(APIView):
@@ -146,4 +151,30 @@ class StoreRecipeRequirementApiView(APIView):
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         else:
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                serializer.errors, status=status.HTTP_400_BAD_REQUEST
+            )
+
+
+class StorePurchaseApiView(APIView):
+    # Only authenticated users can access this view
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = PurchaseSerializer
+
+    def post(self, request):
+        # Validate menu_item ID
+        menu_item_id = request.data.get('menu_item')
+        if not MenuItem.objects.filter(id=menu_item_id).exists():
+            return Response(
+                {'detail': 'MenuItem not found.'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        serializer = self.serializer_class(data=request.data)
+        if serializer.is_valid():
+            serializer.save()  # The total_price is calculated in the save method of the Purchase model
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        else:
+            return Response(
+                serializer.errors, status=status.HTTP_400_BAD_REQUEST
+            )
