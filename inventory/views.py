@@ -178,3 +178,30 @@ class StorePurchaseApiView(APIView):
             return Response(
                 serializer.errors, status=status.HTTP_400_BAD_REQUEST
             )
+
+
+class UpdateIngredientApiView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = IngredientSerializer
+
+    def patch(self, request, ingredient_id):
+        try:
+            ingredient = Ingredient.objects.get(pk=ingredient_id)
+        except Ingredient.DoesNotExist:
+            return Response(
+                {'detail': 'Ingredient not found.'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        # Partial update (only fields provided in the request payload)
+        serializer = self.serializer_class(
+            instance=ingredient, data=request.data, partial=True
+        )
+
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        else:
+            return Response(
+                serializer.errors, status=status.HTTP_400_BAD_REQUEST
+            )

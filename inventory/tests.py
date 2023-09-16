@@ -418,3 +418,70 @@ class StorePurchaseApiViewTestCase(APITestCase):
         }
         response = self.client.post(self.url, data)
         self.assertEqual(response.status_code, 401)
+
+
+class UpdateIngredientApiViewTest(APITestCase):
+    def setUp(self):
+        # Create a user
+        self.user = User.objects.create_user(
+            username='testuser6', password='testpass'
+        )
+
+        # Create an ingredient
+        self.ingredient = Ingredient.objects.create(
+            name='Test Ingredient',
+            available_quantity=100.0,
+            measurement_unit=Ingredient.GRAMS,
+            price_per_unit=5.0,
+        )
+        self.url = reverse('update-ingredient', args=[self.ingredient.id])
+        self.token = Token.objects.create(user=self.user)
+        self.client.credentials(
+            HTTP_AUTHORIZATION='Token ' + self.token.key
+        )  # set the token in the request headers
+
+    def test_authenticated_user_can_update_ingredient(self):
+
+        data = {'name': 'Updated Ingredient'}
+        response = self.client.patch(self.url, data)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data['name'], 'Updated Ingredient')
+
+    def test_unauthenticated_user(self):
+        self.client.credentials()  # Remove credentials
+        data = {'name': 'Updated Ingredient'}
+        response = self.client.patch(self.url, data)
+
+        self.assertEqual(response.status_code, 401)
+
+    def test_ingredient_does_not_exist(self):
+
+        invalid_url = reverse(
+            'update-ingredient', args=[999]
+        )  # Assuming 999 does not exist
+        data = {'name': 'Updated Ingredient'}
+        response = self.client.patch(invalid_url, data)
+
+        self.assertEqual(response.status_code, 404)
+
+    def test_invalid_data(self):
+
+        # Invalid measurement unit
+        data = {'measurement_unit': 'invalid_unit'}
+        response = self.client.patch(self.url, data)
+
+        self.assertEqual(response.status_code, 400)
+
+    def test_partial_update(self):
+
+        original_price = '{:.2f}'.format(self.ingredient.price_per_unit)
+
+        data = {'name': 'Partially Updated Ingredient'}
+        response = self.client.patch(self.url, data)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data['name'], 'Partially Updated Ingredient')
+        self.assertEqual(
+            response.data['price_per_unit'], str(original_price)
+        )  # Ensure other fields remain unchanged
