@@ -7,6 +7,7 @@ from .views import (
     StoreIngredientApiView,
     StoreRecipeRequirementApiView,
     StorePurchaseApiView,
+    UpdateIngredientApiView,
 )
 
 urlpatterns = [
@@ -42,5 +43,10 @@ urlpatterns = [
         'api/store-purchase/',
         StorePurchaseApiView.as_view(),
         name='store-purchase',
+    ),
+    path(
+        'api/update-ingredient/<int:ingredient_id>/',
+        UpdateIngredientApiView.as_view(),
+        name='update-ingredient',
     ),
 ]
