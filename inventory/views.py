@@ -2,7 +2,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status, permissions, pagination
 from .models import Ingredient, MenuItem
-from .serializers import IngredientSerializer, MenuItemSerializer
+from .serializers import IngredientSerializer, MenuItemSerializer, RecipeRequirementSerializer
 
 
 class GetIngredientApiView(APIView):
@@ -132,3 +132,18 @@ class StoreIngredientApiView(APIView):
             return Response(
                 serializer.errors, status=status.HTTP_400_BAD_REQUEST
             )
+
+
+class StoreRecipeRequirementApiView(APIView):
+    # Only authenticated users can access this view
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = RecipeRequirementSerializer
+
+    def post(self, request):
+        serializer = self.serializer_class(data=request.data)
+
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

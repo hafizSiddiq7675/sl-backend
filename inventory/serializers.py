@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Ingredient, MenuItem
+from .models import Ingredient, MenuItem, RecipeRequirement
 
 
 class IngredientSerializer(serializers.ModelSerializer):
@@ -40,3 +40,13 @@ class MenuItemSerializer(serializers.ModelSerializer):
                 'Price must be greater than or equal to zero.'
             )
         return value
+
+
+class RecipeRequirementSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = RecipeRequirement
+        fields = ['menu_item', 'ingredient', 'quantity']
+
+    def validate(self, data):
+        # You can add any additional validation here
+        return data
