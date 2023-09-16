@@ -2,7 +2,7 @@ from django.urls import reverse
 from rest_framework.test import APIClient, APITestCase
 from rest_framework.authtoken.models import Token
 from django.contrib.auth.models import User
-from .models import Ingredient, MenuItem
+from .models import Ingredient, MenuItem, RecipeRequirement
 from unittest import mock
 
 
@@ -275,3 +275,65 @@ class StoreIngredientApiViewTests(APITestCase):
 
         response = self.client.post(self.url, self.valid_data, format='json')
         self.assertEqual(response.status_code, 400)
+
+class StoreRecipeRequirementApiViewTest(APITestCase):
+
+    def setUp(self):
+        # Create a test user
+        self.user = User.objects.create_user(username='testuser4', password='testpass')
+        self.client = APIClient()
+
+        # Create sample MenuItem and Ingredient for testing
+        self.menu_item = MenuItem.objects.create(item_name="Test Item", price=10.00)
+        self.ingredient = Ingredient.objects.create(
+            name="Test Ingredient",
+            available_quantity=10.0,
+            measurement_unit=Ingredient.GRAMS,
+            price_per_unit=1.00
+        )
+
+        # URL for the APIView
+        self.url = reverse('store-reciperequirement')  # The exact name depends on your urls.py configuration
+
+    def test_authenticated_with_valid_data(self):
+        # Authenticate the client
+        self.client.force_authenticate(user=self.user)
+
+        # Valid data
+        data = {
+            'menu_item': self.menu_item.id,
+            'ingredient': self.ingredient.id,
+            'quantity': 5.0
+        }
+
+        response = self.client.post(self.url, data, format='json')
+        self.assertEqual(response.status_code, 201)
+        self.assertTrue(RecipeRequirement.objects.filter(menu_item=self.menu_item, ingredient=self.ingredient).exists())
+
+    def test_authenticated_with_invalid_data(self):
+        # Authenticate the client
+        self.client.force_authenticate(user=self.user)
+
+        # Invalid data (quantity below 0)
+        data = {
+            'menu_item': self.menu_item.id,
+            'ingredient': self.ingredient.id,
+            'quantity': -5.0
+        }
+
+        response = self.client.post(self.url, data, format='json')
+        self.assertEqual(response.status_code, 400)
+        self.assertFalse(RecipeRequirement.objects.filter(menu_item=self.menu_item, ingredient=self.ingredient).exists())
+
+    def test_unauthenticated_request(self):
+        # Do not authenticate the client
+
+        # Some data
+        data = {
+            'menu_item': self.menu_item.id,
+            'ingredient': self.ingredient.id,
+            'quantity': 5.0
+        }
+
+        response = self.client.post(self.url, data, format='json')
+        self.assertEqual(response.status_code, 401)
